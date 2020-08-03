@@ -81,6 +81,14 @@ class Reader:
             self.STDF_IO = io.BytesIO(fs.read())
         self.log.info('detecting STDF file size = {}'.format(len(self.STDF_IO.getvalue())))
 
+    def auto_detect_endian(self):
+        header = self._read_and_unpack_header()
+        rec_size, _, _ = header
+        body_raw = self._read_body(rec_size)
+        rec_name, body = self._unpack_body(header, body_raw)
+        self.__set_endian(body['CPU_TYPE'])
+        self.STDF_IO.seek(0)
+
     def read_record(self):
         header = self._read_and_unpack_header()
 
@@ -292,6 +300,7 @@ class Reader:
             raise ValueError
 
     def __iter__(self):
+        self.auto_detect_endian()
         return self
 
     def __next__(self):

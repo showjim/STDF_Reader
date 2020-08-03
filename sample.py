@@ -26,9 +26,7 @@ __author__ = 'cahyo primawidodo 2016'
 if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
-
-    p = Path('/Users/cahyo/Documents/data/oca')
-    in_file = str(p / 'ASETKH-UFLX0058_1_WSBU-NN450-12B-04p1_1_DP5403.K2_15_20150303175521.stdf')
+    in_file = r'./sample_stdf/a595.stdf'
 
     stdf = Reader()
     stdf.load_stdf_file(stdf_file=in_file)
