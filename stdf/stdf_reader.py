@@ -158,11 +158,13 @@ class Reader:
 
                 elif fmt_raw.startswith('V'):
                     vn_map = ['B0', 'U1', 'U2', 'U4', 'I1', 'I2',
-                              'I4', 'R4', 'R8', 'Cn', 'Bn', 'Dn', 'N1']
-                    n, = struct.unpack('H', body_raw.read(2))
+                              'I4', 'R4', 'R8', '', 'Cn', 'Bn', 'Dn', 'N1']
+                    tmp = body_raw.read(2)
+                    n, = struct.unpack(self.e + 'H', tmp)
 
                     for i in range(n):
-                        idx, = struct.unpack(self.e + 'B', body_raw.read(1))
+                        tmp = body_raw.read(1)
+                        idx, = struct.unpack(self.e + 'B', tmp)
                         fmt_vn = vn_map[idx]
 
                         data, odd_nibble = self.__get_data(fmt_vn, body_raw, odd_nibble)
@@ -196,7 +198,7 @@ class Reader:
             fmt, buf = self.__get_format_and_buffer(fmt_act, body_raw)
 
             if fmt:
-                d = struct.unpack(fmt, buf)
+                d = struct.unpack(self.e + fmt, buf)
                 data = d[0] if len(d) == 1 else d
             odd_nibble = True
 

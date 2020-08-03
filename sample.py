@@ -37,11 +37,13 @@ if __name__ == '__main__':
             for r in rec_name:
                 fout.write(r)
 
-                if fout.tell() % 100 == 0:
-                    fout.write('\n')
+                # if fout.tell() % 100 == 0:
+                #     fout.write('\n')
 
             for k, v in body.items():
                 fout.write('.')
+                fout.write(str(k) + ": " + str(v))
+                fout.write('|')
 
-                if fout.tell() % 100 == 0:
-                    fout.write('\n')
+                # if fout.tell() % 100 == 0:
+            fout.write('\n')

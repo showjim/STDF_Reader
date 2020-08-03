@@ -510,7 +510,6 @@
     "rec_typ": 50,
     "rec_sub": 10,
     "body": [
-      ["FLD_CNT", "U2"],
       ["GEN_DATA", "Vn"]
     ]
   },
