@@ -19,6 +19,7 @@ from stdf.stdf_reader import Reader
 from stdf.stdf_writer import Writer
 import logging
 from pathlib import Path
+import time
 
 __author__ = 'cahyo primawidodo 2016'
 
@@ -30,6 +31,8 @@ if __name__ == '__main__':
 
     stdf = Reader()
     stdf.load_stdf_file(stdf_file=in_file)
+
+    startt = time.time()
 
     with open('output.txt', mode='wt', encoding='utf-8') as fout:
         for rec_name, header, body in stdf:
@@ -47,3 +50,5 @@ if __name__ == '__main__':
 
                 # if fout.tell() % 100 == 0:
             fout.write('\n')
+    endt = time.time()
+    print('读取时间：', endt - startt)
