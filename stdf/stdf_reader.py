@@ -91,33 +91,37 @@ class Reader:
         self.__set_endian(body['CPU_TYPE'])
         self.STDF_IO.seek(0)
 
+    def read_record_list(self):
+        position = self.STDF_IO.tell()
+        header, rec_name = self._read_and_unpack_header()
+
+        if header:
+            rec_size, _, _ = header
+            self.STDF_IO.seek(rec_size + position + 4)
+            return rec_name, position
+        else:
+            return False
+
     def read_record(self):
         position = self.STDF_IO.tell()
         header, rec_name = self._read_and_unpack_header()
-        if self.read_rec_list:
-            if header:
-                rec_size, _, _ = header
-                self.STDF_IO.seek(rec_size + position + 4)
-                return rec_name, position
-            else:
-                return False
+
+        if header:
+            rec_size, _, _ = header
+            self.log.debug('BODY start at tell={:0>8}'.format(self.STDF_IO.tell()))
+            body_raw = self._read_body(rec_size)
+            rec_name, body = self._unpack_body(header, body_raw)
+            self.log.debug('BODY end at tell={:0>8}'.format(self.STDF_IO.tell()))
+
+            # if rec_name == 'FAR':
+            #     self.__set_endian(body['CPU_TYPE'])
+
+            return rec_name, header, body
+
         else:
-            if header:
-                rec_size, _, _ = header
-                self.log.debug('BODY start at tell={:0>8}'.format(self.STDF_IO.tell()))
-                body_raw = self._read_body(rec_size)
-                rec_name, body = self._unpack_body(header, body_raw)
-                self.log.debug('BODY end at tell={:0>8}'.format(self.STDF_IO.tell()))
-
-                # if rec_name == 'FAR':
-                #     self.__set_endian(body['CPU_TYPE'])
-
-                return rec_name, header, body
-
-            else:
-                self.log.info('closing STDF_IO at tell={:0>8}'.format(self.STDF_IO.tell()))
-                self.STDF_IO.close()
-                return False
+            self.log.info('closing STDF_IO at tell={:0>8}'.format(self.STDF_IO.tell()))
+            self.STDF_IO.close()
+            return False
 
     def _read_and_unpack_header(self):
         header_raw = self.STDF_IO.read(self.HEADER_SIZE)
@@ -317,7 +321,10 @@ class Reader:
         return self
 
     def __next__(self):
-        r = self.read_record()
+        if self.read_rec_list:
+            r = self.read_record_list()
+        else:
+            r = self.read_record()
         if r:
             return r
         else:
