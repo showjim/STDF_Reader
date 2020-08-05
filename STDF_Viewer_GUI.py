@@ -8,29 +8,27 @@ import logging
 from pathlib import Path
 import time
 
-class Table(QWidget):
+class Application(QWidget):
     def __init__(self, parent=None):
-        super(Table, self).__init__(parent)
+        super().__init__()
+        self.setupUI()
+
+    def setupUI(self):
         # 设置标题与初始大小
         self.setWindowTitle('STDF Viewer Beta V0.1')
         self.resize(500, 300)
 
+        self.table = QTableWidget(self)
+
         row_num = len(stdf_dic)
         col_num = 4
-        # 设置数据层次结构，4行4列
-        self.model = QStandardItemModel(row_num, col_num)
-        # 设置水平方向四个头标签文本内容
-        self.model.setHorizontalHeaderLabels(['Index', 'Records', 'Count','Position'])
 
-        # #Todo 优化2 添加数据
-        # self.model.appendRow([
-        #   QStandardItem('row %s,column %s' % (11,11)),
-        #   QStandardItem('row %s,column %s' % (11,11)),
-        #   QStandardItem('row %s,column %s' % (11,11)),
-        #   QStandardItem('row %s,column %s' % (11,11)),
-        # ])
-        i=0
-        j = 0
+        self.table.setRowCount(row_num)
+        self.table.setColumnCount(col_num)
+        self.table.setHorizontalHeaderLabels(['Index', 'Records', 'Count','Position'])
+
+        i = 0 # row index
+        j = 1 # same record cnt
         last_rec = ''
         for key, val in stdf_dic.items():
             index_rec_list = key.split(' - ')
@@ -40,46 +38,23 @@ class Table(QWidget):
             if rec == last_rec:
                 j += 1
             else:
-                j = 0
-                index_item = QStandardItem(index)
-                rec_item = QStandardItem(rec)
-                pos_item = QStandardItem(val)
-                cnt_item = QStandardItem(j)
-                self.model.setItem(int(index), 0, index_item)
-                self.model.setItem(int(index), 1, rec_item)
-                self.model.setItem(int(index), 2, cnt_item)
-                self.model.setItem(int(index), 3, pos_item)
+
+                index_item = QTableWidgetItem(index)
+                rec_item = QTableWidgetItem(rec)
+                cnt_item = QTableWidgetItem(str(j))
+                pos_item = QTableWidgetItem(str(val))
+                j = 1
+
+                self.table.setItem(i, 0, index_item)
+                self.table.setItem(i, 1, rec_item)
+                self.table.setItem(i, 2, cnt_item)
+                self.table.setItem(i, 3, pos_item)
+                i += 1
             last_rec = rec
-            # i +=1
-            # if i==1000:
-            #     break
-        # for row in range(row_num):
-        #     for column in range(col_num):
-        #         temp_str =
-        #         item = QStandardItem(temp_str) #QStandardItem('row %s,column %s' % (row, column))
-        #         # 设置每个位置的文本值
-        #         self.model.setItem(row, column, item)
-
-        # 实例化表格视图，设置模型为自定义的模型
-        self.tableView = QTableView()
-        self.tableView.setModel(self.model)
-
-        # #todo 优化1 表格填满窗口
-        # #水平方向标签拓展剩下的窗口部分，填满表格
-        # self.tableView.horizontalHeader().setStretchLastSection(True)
-        # #水平方向，表格大小拓展到适当的尺寸
-        # self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        #
-        # #TODO 优化3 删除当前选中的数据
-        # indexs=self.tableView.selectionModel().selection().indexes()
-        # print(indexs)
-        # if len(indexs)>0:
-        #   index=indexs[0]
-        #   self.model.removeRows(index.row(),1)
-
+        self.table.setRowCount(i)
         # 设置布局
         layout = QVBoxLayout()
-        layout.addWidget(self.tableView)
+        layout.addWidget(self.table)
         self.setLayout(layout)
 
 
@@ -102,6 +77,6 @@ if __name__ == '__main__':
 
 
     app = QApplication(sys.argv)
-    table = Table()
-    table.show()
+    viewer = Application()
+    viewer.show()
     sys.exit(app.exec_())
