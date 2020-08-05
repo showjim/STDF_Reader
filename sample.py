@@ -21,8 +21,17 @@ import logging
 from pathlib import Path
 import time
 
-__author__ = 'cahyo primawidodo 2016'
+__author__ = 'Jerry Zhou'
 
+def get_all_records(stdf):
+    stdf.read_rec_list = True
+    stdf_dic = {}
+    i = 0
+    for rec_name, position in stdf:
+        stdf_dic[str(i) + ' - ' + rec_name] = position
+        i += 1
+    stdf.read_rec_list = False
+    return stdf_dic
 
 if __name__ == '__main__':
 
@@ -31,24 +40,22 @@ if __name__ == '__main__':
 
     stdf = Reader()
     stdf.load_stdf_file(stdf_file=in_file)
-
     startt = time.time()
+    stdf_dic = get_all_records(stdf)
+    if stdf_dic:
+        with open('output.txt', mode='wt', encoding='utf-8') as fout:
+            # for rec_name, header, body in stdf:
+            for item in stdf_dic:
+                fout.write(item)
 
-    with open('output.txt', mode='wt', encoding='utf-8') as fout:
-        for rec_name, header, body in stdf:
+                positon = stdf_dic[item]
+                stdf.STDF_IO.seek(positon)
+                rec_name, header, body = stdf.read_record()
+                for k, v in body.items():
+                    fout.write('.')
+                    fout.write(str(k) + ": " + str(v))
+                    fout.write('|')
 
-            for r in rec_name:
-                fout.write(r)
-
-                # if fout.tell() % 100 == 0:
-                #     fout.write('\n')
-
-            for k, v in body.items():
-                fout.write('.')
-                fout.write(str(k) + ": " + str(v))
-                fout.write('|')
-
-                # if fout.tell() % 100 == 0:
-            fout.write('\n')
+                fout.write('\n')
     endt = time.time()
     print('读取时间：', endt - startt)

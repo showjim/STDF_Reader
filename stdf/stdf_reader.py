@@ -42,6 +42,8 @@ class Reader:
         self._load_byte_fmt_mapping()
         self._load_stdf_type(json_file=stdf_ver_json)
 
+        self.read_rec_list = False
+
     def _load_stdf_type(self, json_file):
 
         if json_file is None:
@@ -82,7 +84,7 @@ class Reader:
         self.log.info('detecting STDF file size = {}'.format(len(self.STDF_IO.getvalue())))
 
     def auto_detect_endian(self):
-        header = self._read_and_unpack_header()
+        header, rec_name = self._read_and_unpack_header()
         rec_size, _, _ = header
         body_raw = self._read_body(rec_size)
         rec_name, body = self._unpack_body(header, body_raw)
@@ -90,35 +92,44 @@ class Reader:
         self.STDF_IO.seek(0)
 
     def read_record(self):
-        header = self._read_and_unpack_header()
-
-        if header:
-            rec_size, _, _ = header
-            self.log.debug('BODY start at tell={:0>8}'.format(self.STDF_IO.tell()))
-            body_raw = self._read_body(rec_size)
-            rec_name, body = self._unpack_body(header, body_raw)
-            self.log.debug('BODY end at tell={:0>8}'.format(self.STDF_IO.tell()))
-
-            if rec_name == 'FAR':
-                self.__set_endian(body['CPU_TYPE'])
-
-            return rec_name, header, body
-
+        position = self.STDF_IO.tell()
+        header, rec_name = self._read_and_unpack_header()
+        if self.read_rec_list:
+            if header:
+                rec_size, _, _ = header
+                self.STDF_IO.seek(rec_size + position + 4)
+                return rec_name, position
+            else:
+                return False
         else:
-            self.log.info('closing STDF_IO at tell={:0>8}'.format(self.STDF_IO.tell()))
-            self.STDF_IO.close()
-            return False
+            if header:
+                rec_size, _, _ = header
+                self.log.debug('BODY start at tell={:0>8}'.format(self.STDF_IO.tell()))
+                body_raw = self._read_body(rec_size)
+                rec_name, body = self._unpack_body(header, body_raw)
+                self.log.debug('BODY end at tell={:0>8}'.format(self.STDF_IO.tell()))
+
+                # if rec_name == 'FAR':
+                #     self.__set_endian(body['CPU_TYPE'])
+
+                return rec_name, header, body
+
+            else:
+                self.log.info('closing STDF_IO at tell={:0>8}'.format(self.STDF_IO.tell()))
+                self.STDF_IO.close()
+                return False
 
     def _read_and_unpack_header(self):
         header_raw = self.STDF_IO.read(self.HEADER_SIZE)
 
         header = False
+        rec_name = ''
         if header_raw:
             header = struct.unpack(self.e + 'HBB', header_raw)
             rec_name = self.REC_NAME.setdefault((header[1], header[2]), 'UNK')
             self.log.debug('len={:0>3}, rec={}'.format(header[0], rec_name))
 
-        return header
+        return header, rec_name
 
     def _read_body(self, rec_size):
         self.body_start = self.STDF_IO.tell()
