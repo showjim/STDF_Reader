@@ -88,12 +88,21 @@ class Reader:
         self.log.info('detecting STDF file size = {}'.format(len(self.STDF_IO.getvalue())))
 
     def auto_detect_endian(self):
-        header, rec_name = self._read_and_unpack_header()
-        rec_size, _, _ = header
-        body_raw = self._read_body(rec_size)
-        rec_name, body = self._unpack_body(header, body_raw)
-        self.__set_endian(body['CPU_TYPE'])
-        self.STDF_IO.seek(0)
+        while True:
+            header, rec_name = self._read_and_unpack_header()
+            if header:
+                rec_size, _, _ = header
+                body_raw = self._read_body(rec_size)
+                rec_name, body = self._unpack_body(header, body_raw)
+                if rec_name == 'FAR':
+                    self.__set_endian(body['CPU_TYPE'])
+                    self.STDF_IO.seek(0)
+                    break
+            else:
+                self.e = '@'
+                self.STDF_IO.seek(0)
+                break
+                # self.__set_endian(body['CPU_TYPE'])
 
     def read_record_list(self):
         position = self.STDF_IO.tell()
@@ -191,10 +200,12 @@ class Reader:
                     for i in range(n):
                         tmp = body_raw.read(1)
                         idx, = struct.unpack(self.e + 'B', tmp)
-                        fmt_vn = vn_map[idx]
+                        # add if to judge whether the field type is valid
+                        if idx < len(vn_map):
+                            fmt_vn = vn_map[idx]
 
-                        data, odd_nibble = self.__get_data(fmt_vn, body_raw, odd_nibble)
-                        array_data.append(data)
+                            data, odd_nibble = self.__get_data(fmt_vn, body_raw, odd_nibble)
+                            array_data.append(data)
 
                     body[field] = array_data
                     odd_nibble = True
@@ -224,7 +235,11 @@ class Reader:
             fmt, buf = self.__get_format_and_buffer(fmt_act, body_raw)
 
             if fmt:
-                d = struct.unpack(self.e + fmt, buf)
+                try:
+                    d = struct.unpack(self.e + fmt, buf)
+                except struct.error:
+                    fmt = str(len(buf)) + fmt[-1]
+                    d = struct.unpack(self.e + fmt, buf)
                 data = d[0] if len(d) == 1 else d
             odd_nibble = True
 
@@ -253,7 +268,10 @@ class Reader:
 
         elif fmt_raw == 'Cn':
             buf = body_raw.read(1)
-            n, = struct.unpack(self.e + 'B', buf)
+            if buf != b'':
+                n, = struct.unpack(self.e + 'B', buf)
+            else:
+                n = 0
             posfix = 's'
 
         elif fmt_raw == 'Bn':
